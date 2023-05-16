@@ -3,13 +3,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
+import java.util.stream.IntStream;
 
 enum DoctorRank {Nurse, FamilyDoctor, Surgeon}
-
-enum MenuName {MainMenu, Appointment1, Appointment2, ConfirmCancel}
 
 class DB {
 	private final String DB_URL;
@@ -236,35 +233,160 @@ class Client extends Person {
 	}
 }
 
+class Answer {
+	private final String label;
+	private final int answerNumber;
+	private boolean shouldExit = false;
+
+	public Answer(String _label, int _stepNumber) {
+		this.label = _label;
+		this.answerNumber = _stepNumber;
+	}
+
+	public Answer(String _label, int _stepNumber, boolean _shouldExit) {
+		this.label = _label;
+		this.shouldExit = _shouldExit;
+		this.answerNumber = _stepNumber;
+	}
+
+	public HashMap<String, Object> getAnswer() {
+		HashMap<String, Object> answer = new HashMap<>();
+
+		answer.put("label", label);
+		answer.put("answerNumber", answerNumber);
+		answer.put("shouldExit", shouldExit);
+
+		return answer;
+	}
+}
+
 class Menu {
-	private MenuName menuName;
-	private String question;
-	private String[] answers;
+	private static Menu menu; // Singleton
+	private final int steps = 4;
+	public Boolean isOpened = false;
+	private int step;
 
-	public Menu() {
-		this.menuName = MenuName.MainMenu;
+	private Menu() {
+		this.step = 1;
 	}
 
-	public Menu(MenuName _name) {
-		this.menuName = _name;
+	public static Menu getInstance() {
+		if (menu == null) menu = new Menu();
+
+		return menu;
 	}
 
-	private String getAnswers() {
-		return String.join("\n", answers);
+	public void openMenu() {
+		this.isOpened = true;
+		System.out.println("Welcome! Please answer the question only with the numbers shown. Any other response will result in exiting the menu.");
+	}
+
+	private String getAnswers(ArrayList<HashMap<String, Object>> _answers) {
+		StringBuilder sb = new StringBuilder();
+
+		for (HashMap<String, Object> answer : _answers) {
+			String label = answer.get("label").toString();
+			sb.append(label).append("\n");
+		}
+
+		return sb.toString();
+	}
+
+	public Boolean isLastStep() {
+		return this.step == this.steps;
+	}
+
+	private void exitMenu() {
+		this.isOpened = false;
+		System.out.println("The menu was stopped.");
+	}
+
+	private boolean shouldContinueStep(ArrayList<HashMap<String, Object>> _answers, int _parsedAnswerInput) {
+		int[] answersNumbersList = IntStream.range(1, _answers.size() + 1).toArray();
+		boolean isStepInput = Arrays.stream(answersNumbersList).anyMatch(n -> n == _parsedAnswerInput);
+
+		boolean shouldContinue = !this.isLastStep() && isStepInput;
+
+		for (HashMap<String, Object> answer : _answers) {
+			int answerNumber = (int) answer.get("answerNumber");
+			boolean shouldExit = (boolean) answer.get("shouldExit");
+
+			if (_parsedAnswerInput == answerNumber && shouldExit) {
+				shouldContinue = false;
+				break;
+			}
+		}
+
+		return shouldContinue;
+	}
+
+	private void confirmCancel() {
+		String question = "Are you sure you want to exit?";
+		ArrayList<HashMap<String, Object>> answers = new ArrayList<>();
+
+		Answer answer1 = new Answer("Yes, exit the menu (1)", 1, true);
+		Answer answer2 = new Answer("No, return to the last question (2)", 2);
+		Collections.addAll(answers, answer1.getAnswer(), answer2.getAnswer());
+
+		int parsedUserInput = this.handleStepUserInput(question, answers);
+
+		if (parsedUserInput == 1) this.exitMenu();
+	}
+
+	private int handleStepUserInput(String question, ArrayList<HashMap<String, Object>> answers) {
+		this.showStepAnswers(question, answers);
+
+		Scanner scanner = new Scanner(System.in);
+		String input = scanner.nextLine();
+		int parsedAnswerInput;
+		try {
+			parsedAnswerInput = Integer.parseInt(input.trim());
+		} catch (NumberFormatException ignored) {
+			parsedAnswerInput = 0;
+		}
+
+		return parsedAnswerInput;
+	}
+
+	private void showStepAnswers(String _question, ArrayList<HashMap<String, Object>> _answers) {
+		String stepHandler = String.format("%s\n%s", _question, this.getAnswers(_answers));
+
+		System.out.println(stepHandler);
+	}
+
+	public void handleStep() {
+		if (this.step != 1 && this.step != 2) return;
+
+		String question;
+		ArrayList<HashMap<String, Object>> answers = new ArrayList<>();
+
+		if (this.step == 1) {
+			question = "Do you want to make an appointment?";
+
+			Answer answer1 = new Answer("Yes (1)", 1);
+			Answer answer2 = new Answer("No (2)", 2, true);
+			Collections.addAll(answers, answer1.getAnswer(), answer2.getAnswer());
+		} else {
+			question = "Please confirm that you have read the Terms and Conditions and you agree with them:";
+			Answer answer1 = new Answer("I agree, please continue (1)", 1);
+			Answer answer2 = new Answer("I do not agree and i want to exit the appointment (2)", 2, true);
+			Collections.addAll(answers, answer1.getAnswer(), answer2.getAnswer());
+		}
+
+		int parsedUserInput = this.handleStepUserInput(question, answers);
+
+		if (shouldContinueStep(answers, parsedUserInput)) this.step++;
+		else this.confirmCancel();
 	}
 }
 
 public class Main {
-	public static void main(String[] args) throws SQLException {
-		DB db = new DB();
-		Scanner scanner = new Scanner(System.in);
-		String input;
+	public static void main(String[] args) {
+		Menu menu = Menu.getInstance();
+		menu.openMenu();
 
-		do {
-			System.out.println("Enter a number from the list below in order to continue, or 'stop' to exit.");
-			input = scanner.nextLine();
-		} while (!input.equalsIgnoreCase("stop"));
-
-		scanner.close();
+		while (menu.isOpened) {
+			menu.handleStep();
+		}
 	}
 }
