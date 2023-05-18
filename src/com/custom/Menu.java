@@ -1,5 +1,6 @@
 package com.custom;
 
+import java.sql.SQLException;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.*;
@@ -34,7 +35,6 @@ class Answer {
 
 public class Menu {
 	private static Menu menu; // Singleton
-	private final int steps = 4;
 	public Boolean isOpened = false;
 	private int step;
 
@@ -65,7 +65,8 @@ public class Menu {
 	}
 
 	public Boolean isLastStep() {
-		return this.step == this.steps;
+		int steps = 4;
+		return this.step == steps;
 	}
 
 	private void exitMenu() {
@@ -182,18 +183,25 @@ public class Menu {
 			// db stuff here to create appointment
 			Client client = new Client(first_name, last_name, phone_number, cnp, date_of_birth, address);
 			if (email.length() > 0) client.setEmail(email);
-			System.out.println(client.getPersonalInfo());
 
 			DB db = new DB();
-			System.out.println(db.getSqlFromMap("clients", client.getPersonalInfo()));
+			String sqlQueryString = db.getSqlFromMap("clients", client.getPersonalInfo());
+
+			try {
+				db.queryUpdate(sqlQueryString);
+				System.out.println("Your user account has been successfully created. The system will now close.");
+			} catch (SQLException ex) {
+				System.out.println("An error has occurred while trying to process your appointment. The menu will now close.");
+			}
+
+			this.exitMenu();
+			return;
 		} else if (parsedUserInput == 2) { // user denies the continuation in order to restart the form
 			return; // this restarts the step, so it also restarts the details form
 		} else { // user presses enters any other input
 			this.exitMenu();
 			return;
 		}
-
-		this.exitMenu();
 	}
 
 	public void handleStep() {
