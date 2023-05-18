@@ -198,39 +198,27 @@ public class Menu {
 				String[] timeParts = dateTimeParts[1].split(":");
 				System.out.println(1);
 				LocalDateTime dateTime = LocalDateTime.of(Integer.parseInt(dateParts[2]), Integer.parseInt(dateParts[1]), Integer.parseInt(dateParts[0]), Integer.parseInt(timeParts[0]), Integer.parseInt(timeParts[1]));
-				System.out.println(dateTime);
-
-				System.out.println("da 1");
 
 				ResultSet resMedic = db.query("select * from medics limit 1");
+				String m_f_name = null;
+				String m_l_name = null;
 				int medic_id = 0;
 				while (resMedic.next()) {
 					medic_id = resMedic.getInt("medic_id");
+					m_f_name = resMedic.getString("first_name");
+					m_l_name = resMedic.getString("last_name");
 				}
+				int client_id = 2; // hardcode it
 
-				System.out.println("da 2");
-				int client_id = 1; // hardcode it
-
-				System.out.println("da 3");
-
-				if (medic_id == 0) this.exitMenu();
-
-				System.out.println("da 4");
+				if (medic_id == 0 || m_f_name == null || m_l_name == null) this.exitMenu();
 
 				Appointment appointment = new Appointment(client_id, medic_id, dateTime);
 				System.out.println(appointment.getAppointmentDetails());
 
-				System.out.println("da 5");
-
 				String sqlQueryStringAppointment = db.getSqlFromMap("appointments", appointment.getAppointmentDetails());
-
-				System.out.println(sqlQueryStringAppointment);
 
 				try {
 					db.queryUpdate(sqlQueryStringAppointment);
-
-					String m_f_name = resMedic.getString("first_name");
-					String m_l_name = resMedic.getString("last_name");
 
 					System.out.printf("Congrats %s! Dr. %s %s will see you at %s. Be there!%n", first_name, m_f_name, m_l_name, dateTimeParts[1]);
 				} catch (SQLException ex) {

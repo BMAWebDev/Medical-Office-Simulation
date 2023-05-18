@@ -60,7 +60,6 @@ public class DB {
 			.append(") VALUES (");
 
 		for (Object value : map.values()) {
-
 			sb.append("'").append(value).append("'");
 			if (map.lastEntry().getValue() == value) continue;
 			sb.append(", ");
