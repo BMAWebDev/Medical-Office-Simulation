@@ -11,27 +11,24 @@ public class Medic extends Person {
 	private String office_location, email;
 	private DoctorRank rank;
 
-	public Medic(int _medic_id, String _first_name, String _last_name, String _phone_number, LocalDate _employed_date, DoctorRank _rank) {
+	public Medic(String _first_name, String _last_name, String _phone_number, LocalDate _employed_date, DoctorRank _rank) {
 		super(_first_name, _last_name, _phone_number);
 
-		this.medic_id = _medic_id;
 		this.employed_date = _employed_date;
 		this.rank = _rank;
 	}
 
-	public Medic(int _medic_id, String _first_name, String _last_name, String _phone_number, LocalDate _employed_date, DoctorRank _rank, String _office_location) {
+	public Medic(String _first_name, String _last_name, String _phone_number, LocalDate _employed_date, DoctorRank _rank, String _office_location) {
 		super(_first_name, _last_name, _phone_number);
 
-		this.medic_id = _medic_id;
 		this.employed_date = _employed_date;
 		this.rank = _rank;
 		this.office_location = _office_location;
 	}
 
-	public Medic(int _medic_id, String _first_name, String _last_name, String _phone_number, LocalDate _employed_date, DoctorRank _rank, String _office_location, String _email) {
+	public Medic(String _first_name, String _last_name, String _phone_number, LocalDate _employed_date, DoctorRank _rank, String _office_location, String _email) {
 		super(_first_name, _last_name, _phone_number);
 
-		this.medic_id = _medic_id;
 		this.employed_date = _employed_date;
 		this.rank = _rank;
 		this.office_location = _office_location;

@@ -1,8 +1,10 @@
 package com.custom;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -189,7 +191,51 @@ public class Menu {
 
 			try {
 				db.queryUpdate(sqlQueryString);
-				System.out.println("Your user account has been successfully created. The system will now close.");
+				System.out.println("Your user account has been successfully created. Now please choose a date and time for the appointment (DD-MM-YYYY HH:MM)");
+				String dateTimeInput = scanner.nextLine();
+				String[] dateTimeParts = dateTimeInput.trim().split(" ");
+				String[] dateParts = dateTimeParts[0].split("-");
+				String[] timeParts = dateTimeParts[1].split(":");
+				System.out.println(1);
+				LocalDateTime dateTime = LocalDateTime.of(Integer.parseInt(dateParts[2]), Integer.parseInt(dateParts[1]), Integer.parseInt(dateParts[0]), Integer.parseInt(timeParts[0]), Integer.parseInt(timeParts[1]));
+				System.out.println(dateTime);
+
+				System.out.println("da 1");
+
+				ResultSet resMedic = db.query("select * from medics limit 1");
+				int medic_id = 0;
+				while (resMedic.next()) {
+					medic_id = resMedic.getInt("medic_id");
+				}
+
+				System.out.println("da 2");
+				int client_id = 1; // hardcode it
+
+				System.out.println("da 3");
+
+				if (medic_id == 0 || client_id == 0) this.exitMenu();
+
+				System.out.println("da 4");
+
+				Appointment appointment = new Appointment(client_id, medic_id, dateTime);
+				System.out.println(appointment.getAppointmentDetails());
+
+				System.out.println("da 5");
+
+				String sqlQueryStringAppointment = db.getSqlFromMap("appointments", appointment.getAppointmentDetails());
+
+				System.out.println(sqlQueryStringAppointment);
+
+				try {
+					db.queryUpdate(sqlQueryStringAppointment);
+
+					String m_f_name = resMedic.getString("first_name");
+					String m_l_name = resMedic.getString("last_name");
+
+					System.out.printf("Congrats %s! Dr. %s %s will see you at %s. Be there!%n", first_name, m_f_name, m_l_name, dateTimeParts[1]);
+				} catch (SQLException ex) {
+					System.out.println("Could not create appointment");
+				}
 			} catch (SQLException ex) {
 				System.out.println("An error has occurred while trying to process your appointment. The menu will now close.");
 			}
@@ -230,6 +276,45 @@ public class Menu {
 
 		if (shouldContinueStep(answers, parsedUserInput)) this.step++;
 		else this.confirmCancel();
+	}
+
+	public void createMedic() {
+		System.out.println("Hello. There are no medics available. Please create an entry first.");
+
+		Scanner scanner = new Scanner(System.in);
+		System.out.print("First name: ");
+		String first_name = scanner.nextLine();
+
+		System.out.print("Last name: ");
+		String last_name = scanner.nextLine();
+
+		System.out.print("Phone number: ");
+		String phone_number = scanner.nextLine();
+
+		System.out.print("Employed date (DD-MM-YYYY): ");
+		String employed_date_input = scanner.nextLine();
+		String[] employed_date_parts = employed_date_input.split("-");
+
+		LocalDate employed_date = LocalDate.of(Integer.parseInt(employed_date_parts[2]), Integer.parseInt(employed_date_parts[1]), Integer.parseInt(employed_date_parts[0]));
+
+		System.out.print("Doctor rank (Nurse, FamilyDoctor, Surgeon): ");
+		String rankInput = scanner.nextLine();
+		DoctorRank rank = DoctorRank.valueOf(rankInput);
+
+		Medic medic = new Medic(first_name, last_name, phone_number, employed_date, rank);
+
+		DB db = new DB();
+		String sqlQueryString = db.getSqlFromMap("medics", medic.getPersonalInfo());
+
+		try {
+			db.queryUpdate(sqlQueryString);
+			System.out.println("A new medic was created.");
+		} catch (SQLException ex) {
+			System.out.println("Could not create a new medic.");
+			System.out.println(ex.getMessage());
+		}
+
+		this.exitMenu();
 	}
 }
 

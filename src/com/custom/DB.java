@@ -39,18 +39,16 @@ public class DB {
 
 		Statement stmt = con.createStatement();
 
-		System.out.println(sqlQuery);
-
 		return stmt.executeQuery(sqlQuery);
 	}
 
-	public int queryUpdate(String sqlQuery) throws SQLException {
+	public void queryUpdate(String sqlQuery) throws SQLException {
 		Connection con = this.getConnection();
 		if (con == null) throw new SQLException("Connection is not valid.");
 
 		Statement stmt = con.createStatement();
 
-		return stmt.executeUpdate(sqlQuery);
+		stmt.executeUpdate(sqlQuery);
 	}
 
 	public String getSqlFromMap(String tableName, TreeMap<String, Object> map) {
