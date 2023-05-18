@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.*;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.IntStream;
@@ -12,10 +13,10 @@ class DB {
 	private final String DB_URL;
 
 	public DB() {
-		this.DB_URL = this.getDBURL();
+		this.DB_URL = this.getDbUrl();
 	}
 
-	private String getDBURL() {
+	private String getDbUrl() {
 		try (BufferedReader reader = new BufferedReader(new FileReader("./.env"))) {
 			String line = reader.readLine();
 
@@ -53,6 +54,26 @@ class DB {
 		Statement stmt = con.createStatement();
 
 		return stmt.executeUpdate(sqlQuery);
+	}
+
+	public String getSqlFromMap(String tableName, TreeMap<String, Object> map) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("INSERT INTO ")
+			.append(tableName)
+			.append(" (")
+			.append(String.join(", ", map.keySet()))
+			.append(") VALUES (");
+
+		for (Object value : map.values()) {
+
+			sb.append("'").append(value).append("'");
+			if (map.lastEntry().getValue() == value) continue;
+			sb.append(", ");
+		}
+
+		sb.append(");");
+
+		return sb.toString();
 	}
 }
 
@@ -93,8 +114,8 @@ class Person {
 		return String.format("%s %s", first_name, last_name);
 	}
 
-	public Map<String, String> getPersonalInfo() {
-		Map<String, String> personalInfo = new HashMap<>();
+	public TreeMap<String, Object> getPersonalInfo() {
+		TreeMap<String, Object> personalInfo = new TreeMap<>();
 
 		personalInfo.put("first_name", first_name);
 		personalInfo.put("last_name", last_name);
@@ -166,14 +187,16 @@ class Medic extends Person {
 	}
 
 	@Override
-	public Map<String, String> getPersonalInfo() {
-		Map<String, String> personalInfo = super.getPersonalInfo();
+	public TreeMap<String, Object> getPersonalInfo() {
+		TreeMap<String, Object> personalInfo = super.getPersonalInfo();
 
-		personalInfo.put("medic_id", Integer.toString(this.medic_id));
-		personalInfo.put("employed_date", this.employed_date.toString());
+		personalInfo.put("employed_date", this.employed_date);
 		personalInfo.put("rank", this.rank.name());
-		personalInfo.put("office_location", this.office_location);
-		personalInfo.put("email", this.email);
+		if (this.office_location != null)
+			personalInfo.put("office_location", this.office_location);
+
+		if (this.email != null)
+			personalInfo.put("email", this.email);
 
 		return personalInfo;
 	}
@@ -184,50 +207,37 @@ class Client extends Person {
 	public int client_id;
 	private String email, cnp, address;
 
-	public Client(int _client_id, String _first_name, String _last_name, String _phone_number, String _cnp, LocalDate _date_of_birth, String _address) {
+	public Client(String _first_name, String _last_name, String _phone_number, String _cnp, LocalDate _date_of_birth, String _address) {
 		super(_first_name, _last_name, _phone_number);
 
-		this.client_id = _client_id;
 		this.date_of_birth = _date_of_birth;
 		this.cnp = _cnp;
 		this.address = _address;
 	}
 
-	public Client(int _client_id, String _first_name, String _last_name, String _phone_number, String _cnp, LocalDate _date_of_birth, String _address, String _email) {
+	public Client(String _first_name, String _last_name, String _phone_number, String _cnp, LocalDate _date_of_birth, String _address, String _email) {
 		super(_first_name, _last_name, _phone_number);
 
-		this.client_id = _client_id;
 		this.date_of_birth = _date_of_birth;
 		this.cnp = _cnp;
 		this.address = _address;
 		this.email = _email;
-	}
-
-	public String getEmail() {
-		return email;
 	}
 
 	public void setEmail(String _email) {
 		this.email = _email;
 	}
 
-	public String getCNP() {
-		return cnp;
-	}
-
-	public void setCNP(String _cnp) {
-		this.cnp = _cnp;
-	}
-
 	@Override
-	public Map<String, String> getPersonalInfo() {
-		Map<String, String> personalInfo = super.getPersonalInfo();
+	public TreeMap<String, Object> getPersonalInfo() {
+		TreeMap<String, Object> personalInfo = super.getPersonalInfo();
 
-		personalInfo.put("client_id", Integer.toString(this.client_id));
-		personalInfo.put("date_of_birth", this.date_of_birth.toString());
+		personalInfo.put("date_of_birth", this.date_of_birth);
 		personalInfo.put("address", this.address);
 		personalInfo.put("cnp", this.cnp);
-		personalInfo.put("email", this.email);
+
+		if (this.email != null)
+			personalInfo.put("email", this.email);
 
 		return personalInfo;
 	}
@@ -278,7 +288,7 @@ class Menu {
 
 	public void openMenu() {
 		this.isOpened = true;
-		System.out.println("Welcome! Please answer the question only with the numbers shown. Any other response will result in exiting the menu.");
+		System.out.println("Welcome! Please answer the questions only with the numbers shown. Any other response will result in exiting the menu.");
 	}
 
 	private String getAnswers(ArrayList<HashMap<String, Object>> _answers) {
@@ -330,7 +340,7 @@ class Menu {
 
 		int parsedUserInput = this.handleStepUserInput(question, answers);
 
-		if (parsedUserInput == 1) this.exitMenu();
+		if (parsedUserInput == 1 || parsedUserInput == 0) this.exitMenu();
 	}
 
 	private int handleStepUserInput(String question, ArrayList<HashMap<String, Object>> answers) {
@@ -354,8 +364,78 @@ class Menu {
 		System.out.println(stepHandler);
 	}
 
+	private void handleAppointment() {
+		Scanner scanner = new Scanner(System.in);
+
+		System.out.println("First things first we will need to call you somehow. What's your first name?");
+		String first_name = scanner.nextLine();
+
+		System.out.println("...and your last name?");
+		String last_name = scanner.nextLine();
+
+		System.out.println("A phone number is mandatory in order to continue with your appointment:");
+		String phone_number = scanner.nextLine();
+
+		System.out.println("As well as your personal identification number (EN: PIN - RO: CNP):");
+		String cnp = scanner.nextLine();
+
+		System.out.println("We need to know when were you born (DD-MM-YYYY):");
+		String dob = scanner.nextLine();
+		String[] dobParts = dob.split("-");
+
+		LocalDate date_of_birth;
+
+		try {
+			date_of_birth = LocalDate.of(Integer.parseInt(dobParts[2]), Integer.parseInt(dobParts[1]), Integer.parseInt(dobParts[0]));
+		} catch (NumberFormatException | DateTimeException | ArrayIndexOutOfBoundsException ex) {
+			System.out.println("You need to enter a valid date.");
+			this.confirmCancel();
+			return;
+		}
+
+		System.out.println("We need to know where you live:");
+		String address = scanner.nextLine();
+
+		// optional field
+		System.out.println("Last but not least, if you want us to send you your results via email, please enter it. Otherwise, skip this field");
+		String email = scanner.nextLine();
+
+		System.out.println("Before we finish the reservation, please revise the details you have entered:");
+
+		System.out.println("Name: " + String.format("%s %s", first_name, last_name));
+		System.out.println("Phone number: " + phone_number);
+		System.out.println("CNP: " + cnp);
+		System.out.println("Date of birth: " + date_of_birth);
+		System.out.println("Address: " + address);
+		if (email.length() > 0) System.out.println("Email: " + email);
+
+		String validationQuestion = "Are these the correct details? If not, select the second option to restart the form.";
+		ArrayList<HashMap<String, Object>> validationAnswers = new ArrayList<>();
+		Answer answer1 = new Answer("Yes, please continue with the appointment (1)", 1);
+		Answer answer2 = new Answer("No, restart the form (2)", 2);
+		Collections.addAll(validationAnswers, answer1.getAnswer(), answer2.getAnswer());
+
+		int parsedUserInput = this.handleStepUserInput(validationQuestion, validationAnswers);
+		if (parsedUserInput == 1) { // user accepts to continue
+			// db stuff here to create appointment
+			Client client = new Client(first_name, last_name, phone_number, cnp, date_of_birth, address);
+			if (email.length() > 0) client.setEmail(email);
+			System.out.println(client.getPersonalInfo());
+
+			DB db = new DB();
+			System.out.println(db.getSqlFromMap("clients", client.getPersonalInfo()));
+		} else if (parsedUserInput == 2) { // user denies the continuation in order to restart the form
+			return; // this restarts the step, so it also restarts the details form
+		} else { // user presses enters any other input
+			this.exitMenu();
+			return;
+		}
+
+		this.exitMenu();
+	}
+
 	public void handleStep() {
-		if (this.step != 1 && this.step != 2) return;
+		if (this.step != 1 && this.step != 2 && this.step != 3) return;
 
 		String question;
 		ArrayList<HashMap<String, Object>> answers = new ArrayList<>();
@@ -366,11 +446,14 @@ class Menu {
 			Answer answer1 = new Answer("Yes (1)", 1);
 			Answer answer2 = new Answer("No (2)", 2, true);
 			Collections.addAll(answers, answer1.getAnswer(), answer2.getAnswer());
-		} else {
+		} else if (this.step == 2) {
 			question = "Please confirm that you have read the Terms and Conditions and you agree with them:";
 			Answer answer1 = new Answer("I agree, please continue (1)", 1);
 			Answer answer2 = new Answer("I do not agree and i want to exit the appointment (2)", 2, true);
 			Collections.addAll(answers, answer1.getAnswer(), answer2.getAnswer());
+		} else {
+			this.handleAppointment();
+			return;
 		}
 
 		int parsedUserInput = this.handleStepUserInput(question, answers);
