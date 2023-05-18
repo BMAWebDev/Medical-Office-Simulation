@@ -7,9 +7,9 @@ enum DoctorRank {Nurse, FamilyDoctor, Surgeon}
 
 public class Medic extends Person {
 	private final LocalDate employed_date;
+	private final DoctorRank rank;
 	public int medic_id;
 	private String office_location, email;
-	private DoctorRank rank;
 
 	public Medic(String _first_name, String _last_name, String _phone_number, LocalDate _employed_date, DoctorRank _rank) {
 		super(_first_name, _last_name, _phone_number);
@@ -32,34 +32,6 @@ public class Medic extends Person {
 		this.employed_date = _employed_date;
 		this.rank = _rank;
 		this.office_location = _office_location;
-		this.email = _email;
-	}
-
-	public LocalDate getEmployedDate() {
-		return employed_date;
-	}
-
-	public DoctorRank getRank() {
-		return rank;
-	}
-
-	public void setRank(DoctorRank _rank) {
-		this.rank = _rank;
-	}
-
-	public String getOfficeLocation() {
-		return office_location;
-	}
-
-	public void setOfficeLocation(String _office_location) {
-		this.office_location = _office_location;
-	}
-
-	public String getEmail() {
-		return email;
-	}
-
-	public void setEmail(String _email) {
 		this.email = _email;
 	}
 

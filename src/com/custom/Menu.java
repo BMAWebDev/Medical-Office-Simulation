@@ -213,7 +213,7 @@ public class Menu {
 
 				System.out.println("da 3");
 
-				if (medic_id == 0 || client_id == 0) this.exitMenu();
+				if (medic_id == 0) this.exitMenu();
 
 				System.out.println("da 4");
 

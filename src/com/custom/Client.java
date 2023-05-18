@@ -5,8 +5,9 @@ import java.util.TreeMap;
 
 public class Client extends Person {
 	private final LocalDate date_of_birth;
+	private final String cnp, address;
 	public int client_id;
-	private String email, cnp, address;
+	private String email;
 
 	public Client(String _first_name, String _last_name, String _phone_number, String _cnp, LocalDate _date_of_birth, String _address) {
 		super(_first_name, _last_name, _phone_number);
